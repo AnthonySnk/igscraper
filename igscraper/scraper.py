@@ -4,6 +4,7 @@ from instagram_private_api import Client, errors
 from yaspin import yaspin, Spinner
 from datetime import datetime
 
+import json
 import re
 
 
@@ -137,12 +138,13 @@ class IGScraper(object):
         posts = dict()
         for index, item in enumerate(user_feed, start=1):
 
+            caption = item.get("caption")
             posts[index] = {
                 "date": str(datetime.fromtimestamp(item.get("taken_at", ""))),
                 "url": f"https://instagram.com/p/{item.get('code', 'None')}/",
                 "comment_count": item.get("comment_count", "None"),
                 "like_count": item.get("like_count", "None"),
-                "text": item.get("caption", {}).get("text", "None"),
+                "text": caption.get("text", "None") if caption else "None",
             }
 
             if item.get("location"):
