@@ -1,3 +1,5 @@
 igscraper/*.pyc
 igscraper/__pycache__/
 build/
+dist/
+*.egg-info/
