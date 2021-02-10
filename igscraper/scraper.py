@@ -1,41 +1,41 @@
 #!/usr/bin/env python3.8
 
 from instagram_private_api import Client, errors
-from yaspin import yaspin, Spinner
 from datetime import datetime
 
-import json
+import logging as log
 import re
 
 
 class IGScraper(object):
-    def __init__(self, username: str, password: str):
+    def __init__(self, username: str, password: str, verbose=False):
 
-        self.spinner = Spinner(["[ ]", "[.]", "[:]", "[.]", "[ ]"], 200)
+        if verbose:
+            log.basicConfig(
+                format="[%(asctime)s] (%(levelname)s) %(message)s", level=log.DEBUG
+            )
 
-        with yaspin(self.spinner, text="login") as spinner:
-            try:
-                self.client = Client(username=username, password=password)
-                spinner.text = "login success"
-                spinner.ok("[+]")
+        else:
+            log.basicConfig(format="[%(asctime)s] (%(levelname)s) %(message)s")
 
-            except errors.ClientLoginError as error:
-                spinner.text = "login error invalid username or password"
-                spinner.fail("[-]")
-                raise errors.ClientLoginError(error)
+        try:
+            self.client = Client(username=username, password=password)
+            log.info("Login success")
+
+        except errors.ClientLoginError as error:
+            log.error("An error occurred while trying to log in")
+            raise error
 
     def __get_user_info(self, username: str) -> dict:
         """Returns all user information"""
 
-        with yaspin(self.spinner, text="get user information") as spinner:
-            try:
-                user_info = self.client.username_info(username)
-                spinner.ok("[+]")
+        try:
+            user_info = self.client.username_info(username)
+            log.info(f"Get username information: {username}")
 
-            except errors.ClientError as error:
-                spinner.text = f"user not found: {username}"
-                spinner.fail("[-]")
-                raise errors.ClientError(error)
+        except errors.ClientError as error:
+            log.error("An error occurred while trying to retrieve user information.")
+            raise error
 
         return user_info
 
@@ -45,6 +45,7 @@ class IGScraper(object):
         hd_profile_pic_url_info = user_info.get("user", {}).get(
             "hd_profile_pic_url_info", {}
         )
+        log.info("URL to the profile picture was obtained")
         return hd_profile_pic_url_info.get("url", "None")
 
     def __get_phone_numbers(self, user_info: dict) -> list:
@@ -62,6 +63,7 @@ class IGScraper(object):
         if phone_number:
             phone_numbers.append("".join(phone_number[0]))
 
+        log.info(f"{len(phone_numbers)} phone numbers were obtained")
         return phone_numbers
 
     def __get_emails(self, user_info: dict) -> list:
@@ -78,6 +80,7 @@ class IGScraper(object):
         if user_email:
             emails.append(user_email[0])
 
+        log.info(f"{len(emails)} emails were obtained")
         return emails
 
     def __get_username_feed(self, username: str, media_count: int) -> list:
@@ -85,13 +88,15 @@ class IGScraper(object):
 
         user_feed = list()
         if not media_count:
+            log.info("The user has not published anything")
             return user_feed
 
         try:
             result = self.client.username_feed(username)
 
-        except errors.ClientError as identifier:
-            raise identifier
+        except errors.ClientError as error:
+            log.error(f"An error occurred while trying to retrieve the user's feed")
+            raise error
 
         user_feed.extend(result.get("items", []))
         next_max_id = result.get("next_max_id")
@@ -103,16 +108,19 @@ class IGScraper(object):
             else:
                 next_max_id = result.get("next_max_id")
 
+        log.info(f"{len(user_feed)} user posts retrieved")
         return user_feed
 
     def __get_likes_count(self, user_feed: list) -> int:
         """The sum of all the likes in the publications is obtained"""
 
+        log.info("Total number of likes in the user's publications was obtained")
         return sum(item.get("like_count", 0) for item in user_feed)
 
     def __get_comment_count(self, user_feed: list) -> int:
         """The sum of all the comments in the publications is obtained"""
 
+        log.info("Total number of comments in the user's publications was obtained")
         return sum(item.get("comment_count", 0) for item in user_feed)
 
     def __get_frequency_posts(self, user_feed: list) -> str:
@@ -130,6 +138,7 @@ class IGScraper(object):
                 diff = datetime.now() - item
                 diffs.append(diff.days)
 
+        log.info("The frequency in days in which the user publishes was obtained")
         return "None" if not diffs else f"{round(sum(diffs) / len(diffs))} days"
 
     def __get_posts(self, user_feed: list) -> dict:
@@ -159,6 +168,7 @@ class IGScraper(object):
                     }
                 )
 
+        log.info(f"Information from {len(posts)} user posts was retrieved")
         return posts
 
     def username_info(self, username: str) -> dict:

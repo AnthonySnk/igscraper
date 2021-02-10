@@ -11,7 +11,6 @@ setup(
     packages=find_packages(),
     install_requires=[
         "instagram_private_api",
-        "yaspin",
         "PyYAML",
     ],
     license="MIT",
