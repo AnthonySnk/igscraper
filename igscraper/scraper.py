@@ -201,8 +201,8 @@ class IGScraper(object):
             "frequency_posts": frequency_posts,
             "phone_numbers": user_phones,
             "emails": user_emails,
-            "is_bussines": user_info.get("is_bussines", "None"),
-            "is_verified": user_info.get("is_verified", "None"),
-            "is_private": user_info.get("is_private", "False"),
+            "is_business": user_info.get("user", {}).get("is_business", "None"),
+            "is_verified": user_info.get("user", {}).get("is_verified", "None"),
+            "is_private": user_info.get("user", {}).get("is_private", "None"),
             "posts": posts,
         }
